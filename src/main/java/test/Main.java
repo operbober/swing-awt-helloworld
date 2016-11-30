@@ -2,6 +2,8 @@ package test;
 
 import javax.swing.*;
 import java.awt.*;
+import java.awt.event.ActionEvent;
+import java.awt.event.ActionListener;
 import java.util.concurrent.TimeUnit;
 
 /**
@@ -12,15 +14,45 @@ public class Main extends JFrame{
     Main (String s) {
         super(s);
 
-        int width = 300;
-        int height = 300;
+        int width = 800;
+        int height = 800;
 
-        DrawPanel panel = new DrawPanel(width, height);
-        panel.setPreferredSize(new Dimension(width, height));
+        this.setSize(new Dimension(width, height));
+        this.setLayout(new GridLayout(4, 1));
+
+        final DrawPanel panel = new DrawPanel(width, height/4 - 20);
         add(panel);
-        pack();
+        final Thread drawThread = new Thread(panel);
+
+        final Button stopStartButton = new Button("Stop");
+        add(stopStartButton);
+
+        stopStartButton.addActionListener(new ActionListener() {
+            public void actionPerformed(ActionEvent e) {
+                panel.setWait(!panel.isWait());
+                if (panel.isWait()) {
+                    stopStartButton.setLabel("Start");
+                } else {
+                    stopStartButton.setLabel("Stop");
+                }
+            }
+        });
+
+        final TextField wText = new TextField(6);
+        add(wText);
+
+        final Button setWButton = new Button("Set");
+        add(setWButton);
+
+        setWButton.addActionListener(new ActionListener() {
+            public void actionPerformed(ActionEvent e) {
+                panel.setW(Double.valueOf(wText.getText()));
+            }
+        });
+
         setVisible(true);
         this.setLocationRelativeTo(null);
+        drawThread.start();
     }
 
     public static void main(String[] args) {
@@ -40,6 +72,10 @@ public class Main extends JFrame{
 
     private class DrawPanel extends JComponent implements Runnable {
 
+        private boolean wait = false;
+        private double w = 0.5;
+        private int circle = 0;
+
         private long t = System.nanoTime();
         private int height;
         private int width;
@@ -48,21 +84,21 @@ public class Main extends JFrame{
             super();
             this.width = width;
             this.height = height;
-            new Thread(this).start();
         }
 
         @Override
         public void run() {
             while (true) {
-                repaint();
+                if (!wait) {
+                    repaint();
+                }
                 try {
                     TimeUnit.MILLISECONDS.sleep(100);
                 } catch (InterruptedException ignored) {}
             }
         }
 
-        private double w = 0.5;
-        private int circle = 0;
+
 
         @Override
         protected void paintComponent(Graphics g) {
@@ -79,6 +115,18 @@ public class Main extends JFrame{
             g2d.drawLine(0, height / 2, width, height / 2);
             g2d.drawOval(x, height / 2 - 3 + (int)distance, 6, 6);
             g2d.fillOval(x, height / 2 - 3 + (int)distance, 6, 6);
+        }
+
+        public void setWait(boolean wait) {
+            this.wait = wait;
+        }
+
+        public boolean isWait() {
+            return wait;
+        }
+
+        public void setW(double w) {
+            this.w = w;
         }
     }
 }
